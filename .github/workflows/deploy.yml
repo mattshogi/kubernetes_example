@@ -59,36 +59,41 @@ jobs:
           scp -o StrictHostKeyChecking=no -i id_rsa cluster/metallb_pool_automation.sh ec2-user@"$ip":/home/ec2-user/
           ssh -o StrictHostKeyChecking=no -i id_rsa ec2-user@"$ip" "bash /home/ec2-user/metallb_pool_automation.sh" || echo "Failed to automate MetalLB address pool."
 
+      - name: Create Namespace
+        run: |
+          export KUBECONFIG=$(pwd)/kubeconfig
+          kubectl create namespace demo || true
+
       - name: Deploy Hello World App
         run: |
           export KUBECONFIG=$(pwd)/kubeconfig
-          kubectl apply -f hello-world.yaml
+          kubectl apply -n demo -f hello-world.yaml
 
       - name: Output Hello World Service External IP
         run: |
           export KUBECONFIG=$(pwd)/kubeconfig
-          kubectl get svc hello-world-service -o json | jq -r '.status.loadBalancer.ingress[0].ip' || echo "No external IP assigned yet."
+          kubectl get svc hello-world-service -n demo -o json | jq -r '.status.loadBalancer.ingress[0].ip' || echo "No external IP assigned yet."
 
       - name: Validate Hello World Deployment
         run: |
           export KUBECONFIG=$(pwd)/kubeconfig
-          kubectl rollout status deployment/hello-world
-          kubectl get pods
+          kubectl rollout status deployment/hello-world -n demo
+          kubectl get pods -n demo
 
       - name: Validate Hello World Deployment
         if: success()
         run: |
           export KUBECONFIG=$(pwd)/kubeconfig
-          kubectl rollout status deployment/hello-world || echo "Hello World deployment validation failed."
-          kubectl get svc hello-world-service || echo "Failed to get Hello World service."
-          kubectl get pods || echo "Failed to get pods."
+          kubectl rollout status deployment/hello-world -n demo || echo "Hello World deployment validation failed."
+          kubectl get svc hello-world-service -n demo || echo "Failed to get Hello World service."
+          kubectl get pods -n demo || echo "Failed to get pods."
 
       - name: Output Hello World Service External IP
         if: success()
         run: |
           export KUBECONFIG=$(pwd)/kubeconfig
           echo "Getting external IP for hello-world-service..."
-          kubectl get svc hello-world-service -o json | jq -r '.status.loadBalancer.ingress[0].ip' || echo "No external IP assigned yet."
+          kubectl get svc hello-world-service -n demo -o json | jq -r '.status.loadBalancer.ingress[0].ip' || echo "No external IP assigned yet."
 
       - name: List files in workspace for debug
         run: |
@@ -113,4 +118,4 @@ jobs:
           echo "Validating MetalLB address pool..."
           ssh -o StrictHostKeyChecking=no -i id_rsa ec2-user@"$ip" "kubectl get ipaddresspools -n metallb-system" || echo "MetalLB address pool missing."
           echo "Validating Hello World service..."
-          ssh -o StrictHostKeyChecking=no -i id_rsa ec2-user@"$ip" "kubectl get svc hello-world-service" || echo "Hello World service not found."
+          ssh -o StrictHostKeyChecking=no -i id_rsa ec2-user@"$ip" "kubectl get svc hello-world-service -n demo" || echo "Hello World service not found."

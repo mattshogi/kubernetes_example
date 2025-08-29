@@ -2,8 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: hello-world
+  namespace: demo
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: hello-world
@@ -13,22 +14,33 @@ spec:
         app: hello-world
     spec:
       containers:
-      - name: hello-world
-        image: hashicorp/http-echo
-        args:
-        - "-text=Hello, World!"
-        ports:
-        - containerPort: 5678
+        - name: hello-world
+          image: bashofmann/rancher-demo:1.0.0
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+          resources:
+            requests:
+              memory: "12Mi"
+              cpu: "2m"
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: hello-world-service
+  namespace: demo
 spec:
   type: LoadBalancer
   selector:
     app: hello-world
   ports:
     - protocol: TCP
-      port: 80
-      targetPort: 5678
+      port: 8080
+      targetPort: 8080
