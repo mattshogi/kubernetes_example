@@ -219,6 +219,19 @@ After your k3s cluster is up, you can deploy a simple "Hello, World!" app:
 
 ---
 
+## Automated Cleanup
+
+To remove all AWS resources created by Terraform, run the automated cleanup script:
+
+```bash
+cd infra
+bash cleanup.sh
+```
+
+This will destroy all infrastructure and reset your environment.
+
+---
+
 ## Summary
 
 - **Local cluster:** kind → free, instant, no VM needed.

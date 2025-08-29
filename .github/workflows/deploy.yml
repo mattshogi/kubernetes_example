@@ -69,3 +69,14 @@ jobs:
           kubectl rollout status deployment/hello-world
           kubectl get svc hello-world-service
           kubectl get pods
+
+      - name: Get EC2 Public IP via AWS CLI
+        run: |
+          INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=k3s-node" --query "Reservations[*].Instances[*].InstanceId" --output text)
+          ip=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" --query "Reservations[*].Instances[*].PublicIpAddress" --output text)
+          echo "EC2 instance public IP: $ip"
+          if [[ -z "$ip" ]]; then
+            echo "ERROR: EC2 instance was not created or has no public IP."
+            exit 1
+          fi
+          ping -c 3 $ip || { echo "ERROR: Instance is not reachable."; exit 1; }
