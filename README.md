@@ -1,260 +1,49 @@
-# kubernetes_example
-
-[![CI/CD](https://github.com/mattshogi/kubernetes_example/actions/workflows/deploy.yml/badge.svg)](https://github.com/mattshogi/kubernetes_example/actions/workflows/deploy.yml)
+# Kubernetes Example: AWS k3s + MetalLB + Hello World
 
 ## Overview
-
-This repo provides a simple, highly available, and scalable Kubernetes cluster starter kit.  
-You can deploy locally (minimal resources) or to AWS Free Tier using Terraform.
-
----
-
-## Layers & Tools
-
-| Layer                | Tool / Why                                                                                           |
-|----------------------|------------------------------------------------------------------------------------------------------|
-| Local cluster        | **kind** (Kubernetes IN Docker) – Lightweight, single VM/host, <1 GB RAM. Works on Mac/Windows/Linux. |
-| Cloud IaC            | **Terraform** + AWS provider – Deploys to AWS Free Tier (t3.micro). Reusable code for local or cloud. |
-| CI/CD                | **GitHub Actions** – Free for public repos.                                                          |
-| Cost-saving          | Uses free tier instances or local VM with 4 GB RAM + SSD.                                            |
-
----
-
-## Required GitHub Secrets
-
-- `AWS_ACCESS_KEY_ID`: Your AWS access key
-- `AWS_SECRET_ACCESS_KEY`: Your AWS secret key
-- `K3S_SSH_PRIVATE_KEY`: SSH private key matching `infra/id_rsa.pub` (used for EC2 access)
-
----
-
-## Prerequisites Installation
-
-### Local Deployment (kind)
-
-1. **Install Docker:**
-   - macOS: [Download Docker Desktop](https://www.docker.com/products/docker-desktop/)
-   - Windows: [Download Docker Desktop](https://www.docker.com/products/docker-desktop/)
-   - Linux: Follow your distro's instructions ([docs](https://docs.docker.com/engine/install/))
-
-2. **Install kind:**
-   - macOS:
-
-     ```sh
-     brew install kind
-     ```
-
-   - Linux/Windows:
-
-     ```sh
-     curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.22.0/kind-$(uname)-amd64
-     chmod +x ./kind
-     mv ./kind /usr/local/bin/kind
-     ```
-
-   - [kind installation docs](https://kind.sigs.k8s.io/docs/user/quick-start/)
-
-### AWS Deployment (Terraform)
-
-1. **Install Terraform:**
-   - macOS:
-
-     ```sh
-     brew tap hashicorp/tap
-     brew install hashicorp/tap/terraform
-     ```
-
-   - Linux/Windows: [Download Terraform](https://www.terraform.io/downloads.html)
-
-2. **Install AWS CLI:**
-   - macOS:
-
-     ```sh
-     brew install awscli
-     ```
-
-   - Linux/Windows: [AWS CLI install guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-
-3. **Configure AWS CLI for Free Tier:**
-
-   ```sh
-   aws configure
-   ```
-
-   - Enter your AWS credentials and default region (e.g., us-east-1).
-
----
-
-## AWS Deployment with Terraform
-
-1. **Initialize and apply Terraform:**
-
-   ```sh
-   terraform init
-   terraform apply
-   ```
-
-2. **Sample main.tf:**
-
-   ```hcl
-   # main.tf
-   provider "aws" {
-     region = "us-east-1"
-   }
-
-   resource "aws_instance" "k8s_master" {
-     ami           = "ami-0c94855ba95c71c99" # Amazon Linux 2
-     instance_type = "t3.micro"
-     count         = 3
-     tags = { Name = "k8s-master" }
-   }
-
-   resource "aws_instance" "k8s_worker" {
-     ami           = "ami-0c94855ba95c71c99"
-     instance_type = "t3.micro"
-     count         = 2
-     tags = { Name = "k8s-worker" }
-   }
-   ```
-
----
-
-## Project Layout
-
-Your project is organized as follows:
-
-```text
-├── infra/
-│   ├── main.tf          # Terraform config for AWS resources and k3s node
-│   ├── variables.tf     # Terraform variables (region, instance type)
-│   └── outputs.tf       # Terraform outputs (e.g., kubeconfig)
-├── cluster/
-│   ├── k3s_install.sh   # Script to install k3s on the instance
-│   └── kubeconfig.tpl   # Template for kubeconfig output
-└── .github/workflows/deploy.yml # GitHub Actions workflow for CI/CD
-```
-
-## How to Deploy
-
-1. **Install prerequisites** (see above)
-2. **Set up AWS credentials** (locally and in GitHub secrets for CI/CD)
-3. **Initialize and apply Terraform:**
-
-   ```bash
-   cd infra
-   terraform init
-   terraform apply -auto-approve
-   ```
-
-4. **Access your cluster:**
-   - Kubeconfig will be available on the instance and can be exported using the template
-   - Use SSH to retrieve kubeconfig if needed
-
-## Local Testing: Deploy a Cluster with kind
-
-You can quickly spin up a local Kubernetes cluster for testing using kind.
-
-### Start a Cluster
-
-```bash
-kind create cluster --name demo
-```
-
-### Deploy an Example App (nginx)
-
-```bash
-kubectl apply -f https://k8s.io/examples/application/deployment.yaml
-```
-
-### Stop & Clean Up
-
-```bash
-kind delete cluster --name demo
-```
-
-## MetalLB & External IPs
-
-- MetalLB is automatically installed on your k3s cluster to provide LoadBalancer support for services.
-- The GitHub Actions workflow will output the external IP assigned to your `hello-world-service` after deployment.
-- Use this IP to access your app in the browser: `http://<EXTERNAL-IP>/`
-- If no external IP appears, check that your MetalLB address pool matches your EC2 private subnet (see `cluster/metallb-pool.yaml`).
-
-## Deploy a Hello, World! App
-
-After your k3s cluster is up, you can deploy a simple "Hello, World!" app:
-
-1. Apply the manifest:
-
-   ```bash
-   kubectl apply -f hello-world.yaml
-   ```
-
-2. Get the external IP (automated in workflow):
-
-   ```bash
-   kubectl get svc hello-world-service
-   # Or check workflow logs for the external IP output
-   ```
-
-3. Visit `http://<EXTERNAL-IP>/` in your browser. You should see "Hello, World!"
-
-## Troubleshooting MetalLB
-
-- If your service does not get an external IP, verify that MetalLB is running:
-
-  ```bash
-  kubectl get pods -n metallb-system
-  kubectl get ipaddresspools -n metallb-system
-  ```
-
-- Ensure your address pool in `cluster/metallb-pool.yaml` matches your EC2 private subnet.
-- Check workflow logs for any errors related to MetalLB or service IP assignment.
-
-## Troubleshooting & Validation
-
-### Common Issues
-
-- **Terraform errors**: Check AWS credentials, region, and instance type. Ensure your SSH key exists at `~/.ssh/id_rsa.pub`.
-
-- **k3s install fails**: Verify network connectivity and that the EC2 instance has outbound internet access.
-
-- **Kubeconfig not found**: Confirm the install script ran successfully and the file was copied to `/home/ec2-user/.kube/config`.
-
-- **GitHub Actions fails**: Check repo secrets for correct AWS credentials and SSH key.
-
-
-### Validation Steps
-
-- Run `terraform validate` in the `infra/` directory to check your Terraform files.
-
-- Run `shellcheck cluster/k3s_install.sh` to lint your shell script.
-
-- After deployment, run `kubectl get nodes` using the exported kubeconfig to verify cluster health.
-
----
-
-## Automated Cleanup
-
-To remove all AWS resources created by Terraform, run the automated cleanup script:
-
-```bash
-cd infra
-bash cleanup.sh
-```
-
-This will destroy all infrastructure and reset your environment.
-
----
-
-## Summary
-
-- **Local cluster:** kind → free, instant, no VM needed.
-- **IaC for cloud:** Terraform + k3s_install.sh → works on AWS free tier, or any other provider.
-- **CI/CD pipeline:** GitHub Actions (free minutes) to apply Terraform and fetch kubeconfig.
-
-With this stack you can:
-
-- Spin up a cluster locally in seconds.
-- Commit the same IaC to GitHub.
-- Push → GitHub Action → Terraform provisions an inexpensive VM, installs k3s, outputs kubeconfig.
-- Use kubectl from your laptop to talk to either environment.
+This project demonstrates a streamlined, reliable, and minimal setup for deploying a k3s Kubernetes cluster on AWS EC2, with MetalLB for LoadBalancer support and a publicly accessible Hello World app.
+
+## Key Features
+- **Terraform Networking:**
+  - VPC, public subnet, internet gateway, route table, security group, and NACL are defined with only required rules.
+  - Security group allows SSH (22), HTTP (80), app port (8080), and ICMP (ping) from anywhere.
+  - NACL allows all traffic for demo reliability.
+  - Subnet and EC2 instance are configured for public IP assignment.
+  - All resources are tagged for clarity.
+- **Instance Bootstrapping:**
+  - `cluster/k3s_install.sh` disables all OS firewalls, installs k3s, patches kubeconfig for public IP, and installs MetalLB.
+  - Clear logging for each step.
+- **CI/CD Workflow:**
+  - Validates AWS resources and EC2 connectivity (SSH, HTTP, ICMP) after provisioning.
+  - Fails fast and prints actionable debug info if connectivity fails.
+  - Deploys Hello World app in a dedicated namespace and outputs the external IP.
+- **Outputs:**
+  - Terraform outputs for security group, subnet, NACL, and public IP for workflow and manual validation.
+- **Cleanup:**
+  - Aggressive cleanup script provided to destroy all resources except the VPC.
+
+## How It Works
+1. **Provision Infrastructure:**
+   - Run `terraform init` and `terraform apply` in the `infra` directory.
+2. **Deploy k3s Cluster:**
+   - EC2 instance boots, disables firewalls, installs k3s, and sets up MetalLB.
+3. **CI/CD Workflow:**
+   - Validates AWS resources and EC2 connectivity.
+   - Deploys Hello World app and outputs its public IP.
+4. **Cleanup:**
+   - Run the cleanup script to destroy resources when finished.
+
+## Troubleshooting
+- If EC2 is not reachable, check AWS Console for security group, NACL, subnet, and public IP assignment.
+- Use workflow output and Terraform outputs for manual validation.
+- For production, re-enable and properly configure OS firewalls and restrict security group access.
+
+## Files
+- `infra/main.tf`: Terraform networking and EC2 provisioning.
+- `infra/outputs.tf`: Terraform outputs for key resources.
+- `cluster/k3s_install.sh`: Instance bootstrapping and k3s/MetalLB setup.
+- `.github/workflows/deploy.yml`: CI/CD workflow for deployment and validation.
+- `infra/cleanup.sh`: Resource cleanup script.
+
+## Notes
+- This setup is for demo and learning purposes. For production, follow AWS and Kubernetes security best practices.

@@ -128,15 +128,10 @@ jobs:
           aws ec2 describe-network-acls --network-acl-ids $(terraform output -raw public_acl_id)
           aws ec2 describe-route-tables --filters "Name=vpc-id,Values=$(terraform output -raw vpc_id)"
 
-      - name: AWS EC2 Manual Reachability Check
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: us-east-1
+      - name: EC2 Connectivity Check
         run: |
-          echo "Checking EC2 instance reachability from workflow..."
-          INSTANCE_IP=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=k3s-node" "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].PublicIpAddress" --output text | head -n 1)
+          INSTANCE_IP=$(terraform output -raw instance_public_ip)
           echo "Instance public IP: $INSTANCE_IP"
-          nc -zv $INSTANCE_IP 22 || echo "WARNING: SSH port 22 not reachable from workflow."
-          nc -zv $INSTANCE_IP 8080 || echo "WARNING: App port 8080 not reachable from workflow."
-          ping -c 3 $INSTANCE_IP || echo "WARNING: ICMP ping not reachable from workflow."
+          nc -zv $INSTANCE_IP 22 || echo "WARNING: SSH port 22 not reachable."
+          nc -zv $INSTANCE_IP 8080 || echo "WARNING: App port 8080 not reachable."
+          ping -c 3 $INSTANCE_IP || echo "WARNING: ICMP ping not reachable."
