@@ -16,6 +16,13 @@ cp /etc/rancher/k3s/k3s.yaml /home/ec2-user/.kube/config
 chown ec2-user:ec2-user /home/ec2-user/.kube/config
 
 # Print public IP for debugging
+EC2_PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+if [[ -n "$EC2_PUBLIC_IP" ]]; then
+	sed -i "s/server: https:\/\/127.0.0.1:6443/server: https:\/\/$EC2_PUBLIC_IP:6443/" /home/ec2-user/.kube/config
+	echo "Patched kubeconfig to use EC2 public IP: $EC2_PUBLIC_IP"
+else
+	echo "WARNING: Could not retrieve EC2 public IP for kubeconfig patching."
+fi
 echo "Kubeconfig is at /home/ec2-user/.kube/config"
 
 # End of script
