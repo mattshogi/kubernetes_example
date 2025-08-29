@@ -43,6 +43,11 @@ jobs:
           echo "${{ secrets.K3S_SSH_PRIVATE_KEY }}" > id_rsa
           chmod 600 id_rsa
 
+      - name: Enhanced EC2 Connectivity Test
+        run: |
+          chmod +x infra/test_ssh.sh
+          ./infra/test_ssh.sh "$ip" || { echo "ERROR: EC2 connectivity test failed. See above for debug info."; exit 1; }
+
       - name: Retrieve kubeconfig from EC2
         run: |
           scp -o StrictHostKeyChecking=no -i id_rsa ec2-user@"$ip":/home/ec2-user/.kube/config ./kubeconfig || { echo "Failed to retrieve kubeconfig"; exit 1; }
