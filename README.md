@@ -230,3 +230,16 @@ kind delete cluster --name demo
 
 ---
 
+## Summary
+
+- **Local cluster:** kind → free, instant, no VM needed.
+- **IaC for cloud:** Terraform + k3s_install.sh → works on AWS free tier, or any other provider.
+- **CI/CD pipeline:** GitHub Actions (free minutes) to apply Terraform and fetch kubeconfig.
+
+With this stack you can:
+
+- Spin up a cluster locally in seconds.
+- Commit the same IaC to GitHub.
+- Push → GitHub Action → Terraform provisions an inexpensive VM, installs k3s, outputs kubeconfig.
+- Use kubectl from your laptop to talk to either environment.
+
