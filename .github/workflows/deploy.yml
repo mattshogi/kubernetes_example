@@ -33,9 +33,19 @@ jobs:
             -var "aws_region=us-east-1" \
             -var "instance_type=t3.micro"
 
-      - name: Export kubeconfig
-        working-directory: infra
+      - name: Retrieve kubeconfig from EC2
         run: |
-          ip=$(terraform output -raw kubeconfig)
-          echo "$ip"
-          # Download the file from the instance (via SSH) – requires key in repo secrets
+          ip=$(terraform output -raw instance_public_ip)
+          scp -o StrictHostKeyChecking=no -i ${{ secrets.K3S_SSH_PRIVATE_KEY }} ec2-user@"$ip":/home/ec2-user/.kube/config ./kubeconfig
+
+      - name: Deploy Hello World App
+        run: |
+          export KUBECONFIG=$(pwd)/kubeconfig
+          kubectl apply -f ../hello-world.yaml
+
+      - name: Validate Hello World Deployment
+        run: |
+          export KUBECONFIG=$(pwd)/kubeconfig
+          kubectl rollout status deployment/hello-world
+          kubectl get svc hello-world-service
+          kubectl get pods
