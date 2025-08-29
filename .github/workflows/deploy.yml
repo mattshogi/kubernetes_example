@@ -80,6 +80,22 @@ jobs:
           echo "Getting external IP for hello-world-service..."
           kubectl get svc hello-world-service -o json | jq -r '.status.loadBalancer.ingress[0].ip' || echo "No external IP assigned yet."
 
+      - name: List files in workspace for debug
+        run: |
+          echo "Listing files in workspace root:"
+          ls -l
+          echo "Listing files in infra directory:"
+          ls -l infra
+          echo "Listing files in cluster directory:"
+          ls -l cluster
+
+      - name: Automate MetalLB Address Pool
+        if: success()
+        run: |
+          echo "Automating MetalLB address pool configuration..."
+          scp -o StrictHostKeyChecking=no -i id_rsa cluster/metallb_pool_automation.sh ec2-user@"$ip":/home/ec2-user/
+          ssh -o StrictHostKeyChecking=no -i id_rsa ec2-user@"$ip" "bash /home/ec2-user/metallb_pool_automation.sh" || echo "Failed to automate MetalLB address pool."
+
       - name: Post-Deployment Validation
         if: success()
         run: |
@@ -95,36 +111,3 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i id_rsa ec2-user@"$ip" "kubectl get ipaddresspools -n metallb-system" || echo "MetalLB address pool missing."
           echo "Validating Hello World service..."
           ssh -o StrictHostKeyChecking=no -i id_rsa ec2-user@"$ip" "kubectl get svc hello-world-service" || echo "Hello World service not found."
-
-      - name: Automate MetalLB Address Pool
-        if: success()
-        run: |
-          echo "Automating MetalLB address pool configuration..."
-          ssh -o StrictHostKeyChecking=no -i id_rsa ec2-user@"$ip" "PRIVATE_IP=$(hostname -I | awk '{print $1}'); cat <<EOF > /home/ec2-user/metallb-pool.yaml
-apiVersion: metallb.io/v1beta1
-kind: IPAddressPool
-metadata:
-  name: default-pool
-  namespace: metallb-system
-spec:
-  addresses:
-  - ${PRIVATE_IP}-${PRIVATE_IP}
----
-apiVersion: metallb.io/v1beta1
-kind: L2Advertisement
-metadata:
-  name: default-l2
-  namespace: metallb-system
-spec:
-  ipAddressPools:
-  - default-pool
-EOF
-kubectl apply -f /home/ec2-user/metallb-pool.yaml" || echo "Failed to automate MetalLB address pool."
-      - name: List files in workspace for debug
-        run: |
-          echo "Listing files in workspace root:"
-          ls -l
-          echo "Listing files in infra directory:"
-          ls -l infra
-          echo "Listing files in cluster directory:"
-          ls -l cluster
