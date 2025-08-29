@@ -1,0 +1,41 @@
+# GitHub Actions workflow for deployment
+name: Deploy k3s cluster
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6.0"
+
+      - name: Terraform Init
+        working-directory: infra
+        run: terraform init -input=false
+
+      - name: Terraform Apply
+        working-directory: infra
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          terraform apply \
+            -auto-approve \
+            -var "aws_region=us-east-1" \
+            -var "instance_type=t3.micro"
+
+      - name: Export kubeconfig
+        working-directory: infra
+        run: |
+          ip=$(terraform output -raw kubeconfig)
+          echo "$ip"
+          # Download the file from the instance (via SSH) – requires key in repo secrets
