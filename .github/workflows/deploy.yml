@@ -72,3 +72,10 @@ jobs:
           kubectl rollout status deployment/hello-world || echo "Hello World deployment validation failed."
           kubectl get svc hello-world-service || echo "Failed to get Hello World service."
           kubectl get pods || echo "Failed to get pods."
+
+      - name: Output Hello World Service External IP
+        if: success()
+        run: |
+          export KUBECONFIG=$(pwd)/kubeconfig
+          echo "Getting external IP for hello-world-service..."
+          kubectl get svc hello-world-service -o json | jq -r '.status.loadBalancer.ingress[0].ip' || echo "No external IP assigned yet."

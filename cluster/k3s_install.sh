@@ -19,3 +19,16 @@ chown ec2-user:ec2-user /home/ec2-user/.kube/config
 echo "Kubeconfig is at /home/ec2-user/.kube/config"
 
 # End of script
+
+# Install MetalLB for LoadBalancer support
+METALLB_VERSION="v0.13.12"
+echo "Installing MetalLB..."
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/${METALLB_VERSION}/config/manifests/metallb-native.yaml
+
+# Wait for MetalLB controller to be ready
+kubectl wait --namespace metallb-system --for=condition=Available deployment/controller --timeout=120s
+
+# Apply MetalLB address pool manifest
+kubectl apply -f /home/ec2-user/metallb-pool.yaml
+
+echo "MetalLB installed and configured."
