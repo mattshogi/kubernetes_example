@@ -80,6 +80,46 @@ jobs:
           echo "Getting external IP for hello-world-service..."
           kubectl get svc hello-world-service -o json | jq -r '.status.loadBalancer.ingress[0].ip' || echo "No external IP assigned yet."
 
+      - name: Post-Deployment Validation
+        if: success()
+        run: |
+          echo "Validating EC2 instance connectivity..."
+          ping -c 3 $ip || echo "Instance not reachable via ping."
+          echo "Validating SSH access..."
+          ssh -o StrictHostKeyChecking=no -i id_rsa ec2-user@"$ip" "hostname && uptime" || echo "SSH failed."
+          echo "Validating k3s cluster health..."
+          ssh -o StrictHostKeyChecking=no -i id_rsa ec2-user@"$ip" "kubectl get nodes; kubectl get pods -A" || echo "k3s validation failed."
+          echo "Validating MetalLB pods..."
+          ssh -o StrictHostKeyChecking=no -i id_rsa ec2-user@"$ip" "kubectl get pods -n metallb-system" || echo "MetalLB pods not running."
+          echo "Validating MetalLB address pool..."
+          ssh -o StrictHostKeyChecking=no -i id_rsa ec2-user@"$ip" "kubectl get ipaddresspools -n metallb-system" || echo "MetalLB address pool missing."
+          echo "Validating Hello World service..."
+          ssh -o StrictHostKeyChecking=no -i id_rsa ec2-user@"$ip" "kubectl get svc hello-world-service" || echo "Hello World service not found."
+
+      - name: Automate MetalLB Address Pool
+        if: success()
+        run: |
+          echo "Automating MetalLB address pool configuration..."
+          ssh -o StrictHostKeyChecking=no -i id_rsa ec2-user@"$ip" "PRIVATE_IP=$(hostname -I | awk '{print $1}'); cat <<EOF > /home/ec2-user/metallb-pool.yaml
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: default-pool
+  namespace: metallb-system
+spec:
+  addresses:
+  - ${PRIVATE_IP}-${PRIVATE_IP}
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: default-l2
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+  - default-pool
+EOF
+kubectl apply -f /home/ec2-user/metallb-pool.yaml" || echo "Failed to automate MetalLB address pool."
       - name: List files in workspace for debug
         run: |
           echo "Listing files in workspace root:"

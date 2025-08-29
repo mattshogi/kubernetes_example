@@ -105,6 +105,7 @@ resource "aws_key_pair" "k3s" {
 // Security group allowing all inbound and outbound traffic
 resource "aws_security_group" "allow_all" {
   name        = "k3s-allow-all-${random_id.suffix.hex}"
+  vpc_id      = aws_vpc.main.id
 
   ingress {
     from_port   = 22
