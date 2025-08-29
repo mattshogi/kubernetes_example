@@ -75,30 +75,6 @@ You can deploy locally (minimal resources) or to AWS Free Tier using Terraform.
 
 ---
 
-## Local Cluster Deployment
-
-1. **Create a highly available cluster:**
-
-   ```sh
-   kind create cluster --name ha-demo --config kind-ha-config.yaml
-   ```
-
-2. **Sample kind-ha-config.yaml:**
-
-   ```yaml
-   # kind-ha-config.yaml
-   kind: Cluster
-   apiVersion: kind.x-k8s.io/v1alpha4
-   nodes:
-     - role: control-plane
-     - role: control-plane
-     - role: control-plane
-     - role: worker
-     - role: worker
-   ```
-
----
-
 ## AWS Deployment with Terraform
 
 1. **Initialize and apply Terraform:**
@@ -201,6 +177,24 @@ kubectl apply -f https://k8s.io/examples/application/deployment.yaml
 kind delete cluster --name demo
 ```
 
+## Deploy a Hello, World! App
+
+After your k3s cluster is up, you can deploy a simple "Hello, World!" app:
+
+1. Apply the manifest:
+
+   ```sh
+   kubectl apply -f hello-world.yaml
+   ```
+
+2. Get the external IP:
+
+   ```sh
+   kubectl get svc hello-world-service
+   ```
+
+3. Visit `http://<EXTERNAL-IP>/` in your browser. You should see "Hello, World!"
+
 ## Badges
 
 ![Terraform](https://img.shields.io/badge/Terraform-1.5%2B-blueviolet)
@@ -242,4 +236,3 @@ With this stack you can:
 - Commit the same IaC to GitHub.
 - Push → GitHub Action → Terraform provisions an inexpensive VM, installs k3s, outputs kubeconfig.
 - Use kubectl from your laptop to talk to either environment.
-
