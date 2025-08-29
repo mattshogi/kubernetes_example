@@ -119,3 +119,18 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i id_rsa ec2-user@"$ip" "kubectl get ipaddresspools -n metallb-system" || echo "MetalLB address pool missing."
           echo "Validating Hello World service..."
           ssh -o StrictHostKeyChecking=no -i id_rsa ec2-user@"$ip" "kubectl get svc hello-world-service -n demo" || echo "Hello World service not found."
+
+      - name: AWS Resource Debug Info
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+        run: |
+          echo "Describing EC2 instance..."
+          aws ec2 describe-instances --instance-ids "$INSTANCE_ID"
+          echo "Describing security group..."
+          aws ec2 describe-security-groups --group-ids $(terraform output -raw security_group_id)
+          echo "Describing subnet..."
+          aws ec2 describe-subnets --subnet-ids $(terraform output -raw subnet_id)
+          echo "Describing route table..."
+          aws ec2 describe-route-tables --filters "Name=vpc-id,Values=$(terraform output -raw vpc_id)"

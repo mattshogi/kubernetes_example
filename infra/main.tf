@@ -15,11 +15,23 @@ resource "aws_vpc" "main" {
   cidr_block              = "10.0.0.0/16"
   enable_dns_support      = true
   enable_dns_hostnames    = true
+
+  tags = {
+    Name        = "k3s-vpc"
+    Project     = "kubernetes_example"
+    Environment = "dev"
+  }
 }
 
 // Internet Gateway for the VPC
 resource "aws_internet_gateway" "gw" {
   vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name        = "k3s-igw"
+    Project     = "kubernetes_example"
+    Environment = "dev"
+  }
 }
 
 // Public subnet for the EC2 instance
@@ -28,6 +40,12 @@ resource "aws_subnet" "public" {
   cidr_block              = "10.0.1.0/24"
   map_public_ip_on_launch = true
   availability_zone       = data.aws_availability_zones.available.names[0]
+
+  tags = {
+    Name        = "k3s-public-subnet"
+    Project     = "kubernetes_example"
+    Environment = "dev"
+  }
 }
 
 data "aws_availability_zones" "available" {}
@@ -39,6 +57,12 @@ resource "aws_route_table" "public" {
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.gw.id
+  }
+
+  tags = {
+    Name        = "k3s-public-rt"
+    Project     = "kubernetes_example"
+    Environment = "dev"
   }
 }
 
@@ -112,6 +136,12 @@ resource "aws_security_group" "allow_all" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags = {
+    Name        = "k3s-sg"
+    Project     = "kubernetes_example"
+    Environment = "dev"
+  }
 }
 
 // EC2 instance for k3s
@@ -127,7 +157,9 @@ resource "aws_instance" "k3s_node" {
   user_data = file("${path.module}/../cluster/k3s_install.sh") // Run k3s install script
 
   tags = {
-    Name = "k3s-node"
+    Name        = "k3s-node"
+    Project     = "kubernetes_example"
+    Environment = "dev"
   }
 }
 
@@ -150,4 +182,20 @@ resource "aws_key_pair" "k3s" {
 
 resource "random_id" "suffix" {
   byte_length = 2
+}
+
+output "instance_public_ip" {
+  value = aws_instance.k3s_node.public_ip
+}
+
+output "vpc_id" {
+  value = aws_vpc.main.id
+}
+
+output "subnet_id" {
+  value = aws_subnet.public.id
+}
+
+output "security_group_id" {
+  value = aws_security_group.allow_all.id
 }
