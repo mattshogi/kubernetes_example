@@ -63,7 +63,7 @@ jobs:
         if: success()
         run: |
           export KUBECONFIG=$(pwd)/kubeconfig
-          kubectl apply -f ../hello-world.yaml || echo "Failed to deploy Hello World app, continuing."
+          kubectl apply -f hello-world.yaml || echo "Failed to deploy Hello World app, continuing."
 
       - name: Validate Hello World Deployment
         if: success()
@@ -79,3 +79,12 @@ jobs:
           export KUBECONFIG=$(pwd)/kubeconfig
           echo "Getting external IP for hello-world-service..."
           kubectl get svc hello-world-service -o json | jq -r '.status.loadBalancer.ingress[0].ip' || echo "No external IP assigned yet."
+
+      - name: List files in workspace for debug
+        run: |
+          echo "Listing files in workspace root:"
+          ls -l
+          echo "Listing files in infra directory:"
+          ls -l infra
+          echo "Listing files in cluster directory:"
+          ls -l cluster

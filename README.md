@@ -172,6 +172,13 @@ kubectl apply -f https://k8s.io/examples/application/deployment.yaml
 kind delete cluster --name demo
 ```
 
+## MetalLB & External IPs
+
+- MetalLB is automatically installed on your k3s cluster to provide LoadBalancer support for services.
+- The GitHub Actions workflow will output the external IP assigned to your `hello-world-service` after deployment.
+- Use this IP to access your app in the browser: `http://<EXTERNAL-IP>/`
+- If no external IP appears, check that your MetalLB address pool matches your EC2 private subnet (see `cluster/metallb-pool.yaml`).
+
 ## Deploy a Hello, World! App
 
 After your k3s cluster is up, you can deploy a simple "Hello, World!" app:
@@ -182,19 +189,26 @@ After your k3s cluster is up, you can deploy a simple "Hello, World!" app:
    kubectl apply -f hello-world.yaml
    ```
 
-2. Get the external IP:
+2. Get the external IP (automated in workflow):
 
    ```bash
    kubectl get svc hello-world-service
+   # Or check workflow logs for the external IP output
    ```
 
 3. Visit `http://<EXTERNAL-IP>/` in your browser. You should see "Hello, World!"
 
-## Badges
+## Troubleshooting MetalLB
 
-![Terraform](https://img.shields.io/badge/Terraform-1.5%2B-blueviolet)
-![AWS Free Tier](https://img.shields.io/badge/AWS-Free%20Tier-success)
-![CI/CD](https://img.shields.io/github/workflow/status/mattshogi/kubernetes_example/Deploy%20k3s%20cluster?label=CI%2FCD)
+- If your service does not get an external IP, verify that MetalLB is running:
+
+  ```bash
+  kubectl get pods -n metallb-system
+  kubectl get ipaddresspools -n metallb-system
+  ```
+
+- Ensure your address pool in `cluster/metallb-pool.yaml` matches your EC2 private subnet.
+- Check workflow logs for any errors related to MetalLB or service IP assignment.
 
 ## Troubleshooting & Validation
 
