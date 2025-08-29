@@ -13,5 +13,5 @@ output "public_acl_id" {
 }
 
 output "instance_public_ip" {
-  value = aws_instance.k3s_node.public_ip
+  value = aws_instance.k3s_node[0].public_ip
 }
