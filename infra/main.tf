@@ -77,8 +77,8 @@ resource "aws_network_acl" "public_acl" {
   vpc_id = aws_vpc.main.id
 
   ingress {
-    protocol   = "-1"
     rule_no    = 100
+    protocol   = "-1"
     action     = "allow"
     cidr_block = "0.0.0.0/0"
     from_port  = 0
@@ -86,8 +86,8 @@ resource "aws_network_acl" "public_acl" {
   }
 
   egress {
-    protocol   = "-1"
     rule_no    = 100
+    protocol   = "-1"
     action     = "allow"
     cidr_block = "0.0.0.0/0"
     from_port  = 0
@@ -95,52 +95,54 @@ resource "aws_network_acl" "public_acl" {
   }
 
   subnet_ids = [aws_subnet.public.id]
+  tags = {
+    Name = "k3s-public-acl"
+  }
 }
 
 // Security group allowing all inbound and outbound traffic
 resource "aws_security_group" "allow_all" {
-  name        = "k3s-allow-all-${random_id.suffix.hex}"
+  name        = "k3s-sg"
+  description = "Allow SSH, ICMP, HTTP, and app traffic for k3s demo"
   vpc_id      = aws_vpc.main.id
 
   ingress {
+    description = "Allow SSH"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
   ingress {
+    description = "Allow ICMP (ping)"
     from_port   = -1
     to_port     = -1
     protocol    = "icmp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
   ingress {
+    description = "Allow HTTP"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
   ingress {
+    description = "Allow app port"
     from_port   = 8080
     to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
   egress {
+    description = "Allow all outbound"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
   tags = {
-    Name        = "k3s-sg"
-    Project     = "kubernetes_example"
-    Environment = "dev"
+    Name = "k3s-sg"
   }
 }
 
