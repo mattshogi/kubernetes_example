@@ -38,6 +38,16 @@ jobs:
           ip=$(terraform output -raw instance_public_ip)
           echo "Instance IP: $ip"
 
+      - name: Check EC2 instance status
+        run: |
+          ip=$(terraform output -raw instance_public_ip)
+          if [[ -z "$ip" ]]; then
+            echo "ERROR: EC2 instance was not created or has no public IP."
+            exit 1
+          fi
+          echo "EC2 instance public IP: $ip"
+          ping -c 3 $ip || { echo "ERROR: Instance is not reachable."; exit 1; }
+
       - name: Set up SSH key for kubeconfig retrieval
         run: |
           echo "${{ secrets.K3S_SSH_PRIVATE_KEY }}" > id_rsa

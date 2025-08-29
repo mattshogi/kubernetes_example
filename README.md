@@ -1,5 +1,7 @@
 # kubernetes_example
 
+[![CI/CD](https://github.com/mattshogi/kubernetes_example/actions/workflows/deploy.yml/badge.svg)](https://github.com/mattshogi/kubernetes_example/actions/workflows/deploy.yml)
+
 ## Overview
 
 This repo provides a simple, highly available, and scalable Kubernetes cluster starter kit.  
@@ -15,6 +17,14 @@ You can deploy locally (minimal resources) or to AWS Free Tier using Terraform.
 | Cloud IaC            | **Terraform** + AWS provider – Deploys to AWS Free Tier (t3.micro). Reusable code for local or cloud. |
 | CI/CD                | **GitHub Actions** – Free for public repos.                                                          |
 | Cost-saving          | Uses free tier instances or local VM with 4 GB RAM + SSD.                                            |
+
+---
+
+## Required GitHub Secrets
+
+- `AWS_ACCESS_KEY_ID`: Your AWS access key
+- `AWS_SECRET_ACCESS_KEY`: Your AWS secret key
+- `K3S_SSH_PRIVATE_KEY`: SSH private key matching `infra/id_rsa.pub` (used for EC2 access)
 
 ---
 
