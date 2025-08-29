@@ -39,24 +39,28 @@ data "aws_ami" "amazon_linux" {
 // SSH key pair for accessing the instance
 resource "aws_key_pair" "k3s" {
   key_name   = "k3s-key"
-  public_key = file("~/.ssh/id_rsa.pub")
+  public_key = file("${path.module}/id_rsa.pub")
 }
 
 // Security group allowing all inbound and outbound traffic
 resource "aws_security_group" "allow_all" {
-  name        = "k3s-allow-all"
+  name        = "k3s-allow-all-${random_id.suffix.hex}"
 
   ingress {
     from_port   = 0
-    to_port     = 65535
+    to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
     from_port   = 0
-    to_port     = 65535
+    to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+}
+
+resource "random_id" "suffix" {
+  byte_length = 2
 }
