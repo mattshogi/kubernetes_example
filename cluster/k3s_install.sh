@@ -27,17 +27,14 @@ echo "Kubeconfig is at /home/ec2-user/.kube/config"
 
 # End of script
 
-# Ensure OS firewall allows ICMP (ping) and SSH
+# Disable OS firewall for all traffic (for demo purposes only)
 if command -v firewall-cmd >/dev/null 2>&1; then
-  sudo firewall-cmd --permanent --add-service=ssh
-  sudo firewall-cmd --permanent --add-icmp-block=echo-request --remove-icmp-block=echo-request
-  sudo firewall-cmd --reload
+  sudo systemctl stop firewalld
+  sudo systemctl disable firewalld
 elif command -v ufw >/dev/null 2>&1; then
-  sudo ufw allow ssh
-  sudo ufw allow proto icmp
+  sudo ufw disable
 elif command -v iptables >/dev/null 2>&1; then
-  sudo iptables -A INPUT -p icmp --icmp-type echo-request -j ACCEPT
-  sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+  sudo iptables -F
 fi
 
 # Install MetalLB for LoadBalancer support
