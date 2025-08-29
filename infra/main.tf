@@ -183,19 +183,3 @@ resource "aws_key_pair" "k3s" {
 resource "random_id" "suffix" {
   byte_length = 2
 }
-
-output "instance_public_ip" {
-  value = aws_instance.k3s_node.public_ip
-}
-
-output "vpc_id" {
-  value = aws_vpc.main.id
-}
-
-output "subnet_id" {
-  value = aws_subnet.public.id
-}
-
-output "security_group_id" {
-  value = aws_security_group.allow_all.id
-}
