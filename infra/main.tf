@@ -38,7 +38,7 @@ data "aws_ami" "amazon_linux" {
 
 // SSH key pair for accessing the instance
 resource "aws_key_pair" "k3s" {
-  key_name   = "k3s-key"
+  key_name   = "k3s-key-${random_id.suffix.hex}"
   public_key = file("${path.module}/id_rsa.pub")
 }
 
