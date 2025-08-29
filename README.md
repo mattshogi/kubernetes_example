@@ -123,7 +123,7 @@ You can deploy locally (minimal resources) or to AWS Free Tier using Terraform.
 
 Your project is organized as follows:
 
-```
+```text
 ├── infra/
 │   ├── main.tf          # Terraform config for AWS resources and k3s node
 │   ├── variables.tf     # Terraform variables (region, instance type)
@@ -134,28 +134,13 @@ Your project is organized as follows:
 └── .github/workflows/deploy.yml # GitHub Actions workflow for CI/CD
 ```
 
-## AWS k3s Cluster Deployment
-
-This repo uses Terraform to provision a cheap AWS EC2 instance (Free Tier t3.micro) and install k3s (lightweight Kubernetes):
-
-1. **Configure variables** in `infra/variables.tf` (region, instance type)
-2. **Provision resources** with `infra/main.tf`:
-   - EC2 instance using Amazon Linux 2 AMI
-   - Security group allowing all traffic
-   - SSH key pair for access
-   - User data runs `cluster/k3s_install.sh` to install k3s
-3. **Outputs** in `infra/outputs.tf` (e.g., kubeconfig)
-4. **K3s install script** (`cluster/k3s_install.sh`) installs k3s and sets up kubeconfig for the default user
-5. **Kubeconfig template** (`cluster/kubeconfig.tpl`) for accessing the cluster
-6. **CI/CD**: `.github/workflows/deploy.yml` runs Terraform on push to main, applies infrastructure, and exports kubeconfig
-
 ## How to Deploy
 
 1. **Install prerequisites** (see above)
 2. **Set up AWS credentials** (locally and in GitHub secrets for CI/CD)
 3. **Initialize and apply Terraform:**
 
-   ```sh
+   ```bash
    cd infra
    terraform init
    terraform apply -auto-approve
@@ -171,19 +156,19 @@ You can quickly spin up a local Kubernetes cluster for testing using kind.
 
 ### Start a Cluster
 
-```sh
+```bash
 kind create cluster --name demo
 ```
 
 ### Deploy an Example App (nginx)
 
-```sh
+```bash
 kubectl apply -f https://k8s.io/examples/application/deployment.yaml
 ```
 
 ### Stop & Clean Up
 
-```sh
+```bash
 kind delete cluster --name demo
 ```
 
@@ -193,13 +178,13 @@ After your k3s cluster is up, you can deploy a simple "Hello, World!" app:
 
 1. Apply the manifest:
 
-   ```sh
+   ```bash
    kubectl apply -f hello-world.yaml
    ```
 
 2. Get the external IP:
 
-   ```sh
+   ```bash
    kubectl get svc hello-world-service
    ```
 
