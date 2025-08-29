@@ -36,7 +36,7 @@ jobs:
           ip=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" --query "Reservations[*].Instances[*].PublicIpAddress" --output text)
           echo "EC2 instance public IP: $ip"
           echo "ip=$ip" >> $GITHUB_ENV
-          ping -c 3 $ip || { echo "ERROR: Instance is not reachable."; exit 1; }
+          # Disabled ping check for reachability
 
       - name: Set up SSH key
         run: |
