@@ -27,7 +27,10 @@ resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "10.0.1.0/24"
   map_public_ip_on_launch = true
+  availability_zone       = data.aws_availability_zones.available.names[0]
 }
+
+data "aws_availability_zones" "available" {}
 
 // Route table for the public subnet
 resource "aws_route_table" "public" {
@@ -70,40 +73,6 @@ resource "aws_network_acl" "public_acl" {
   subnet_ids = [aws_subnet.public.id]
 }
 
-// EC2 instance for k3s
-resource "aws_instance" "k3s_node" {
-  ami                    = data.aws_ami.amazon_linux.id
-  instance_type          = var.instance_type   // t3.micro (free tier)
-  key_name               = aws_key_pair.k3s.key_name
-  count                  = 1
-  subnet_id              = aws_subnet.public.id
-  vpc_security_group_ids = [aws_security_group.allow_all.id]
-  associate_public_ip_address = true
-
-  user_data = file("${path.module}/../cluster/k3s_install.sh") // Run k3s install script
-
-  tags = {
-    Name = "k3s-node"
-  }
-}
-
-// Get latest Amazon Linux 2 AMI
-data "aws_ami" "amazon_linux" {
-  most_recent = true
-  owners      = ["137112412989"] # Amazon Linux 2
-
-  filter {
-    name   = "name"
-    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
-  }
-}
-
-// SSH key pair for accessing the instance
-resource "aws_key_pair" "k3s" {
-  key_name   = "k3s-key-${random_id.suffix.hex}"
-  public_key = file("${path.module}/id_rsa.pub")
-}
-
 // Security group allowing all inbound and outbound traffic
 resource "aws_security_group" "allow_all" {
   name        = "k3s-allow-all-${random_id.suffix.hex}"
@@ -143,6 +112,40 @@ resource "aws_security_group" "allow_all" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+}
+
+// EC2 instance for k3s
+resource "aws_instance" "k3s_node" {
+  ami                    = data.aws_ami.amazon_linux.id
+  instance_type          = var.instance_type   // t3.micro (free tier)
+  key_name               = aws_key_pair.k3s.key_name
+  count                  = 1
+  subnet_id              = aws_subnet.public.id
+  vpc_security_group_ids = [aws_security_group.allow_all.id]
+  associate_public_ip_address = true
+
+  user_data = file("${path.module}/../cluster/k3s_install.sh") // Run k3s install script
+
+  tags = {
+    Name = "k3s-node"
+  }
+}
+
+// Get latest Amazon Linux 2 AMI
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["137112412989"] # Amazon Linux 2
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+  }
+}
+
+// SSH key pair for accessing the instance
+resource "aws_key_pair" "k3s" {
+  key_name   = "k3s-key-${random_id.suffix.hex}"
+  public_key = file("${path.module}/id_rsa.pub")
 }
 
 resource "random_id" "suffix" {
