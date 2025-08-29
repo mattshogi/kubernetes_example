@@ -15,6 +15,7 @@ resource "aws_instance" "k3s_node" {
   ami           = data.aws_ami.amazon_linux.id
   instance_type = var.instance_type   // t3.micro (free tier)
   key_name      = aws_key_pair.k3s.key_name
+  count         = 1
 
   vpc_security_group_ids = [aws_security_group.allow_all.id]
 
