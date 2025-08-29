@@ -47,6 +47,13 @@ jobs:
         run: |
           scp -o StrictHostKeyChecking=no -i id_rsa ec2-user@"$ip":/home/ec2-user/.kube/config ./kubeconfig || { echo "Failed to retrieve kubeconfig"; exit 1; }
 
+      - name: Automate MetalLB Address Pool
+        if: success()
+        run: |
+          echo "Automating MetalLB address pool configuration..."
+          scp -o StrictHostKeyChecking=no -i id_rsa cluster/metallb_pool_automation.sh ec2-user@"$ip":/home/ec2-user/
+          ssh -o StrictHostKeyChecking=no -i id_rsa ec2-user@"$ip" "bash /home/ec2-user/metallb_pool_automation.sh" || echo "Failed to automate MetalLB address pool."
+
       - name: Deploy Hello World App
         run: |
           export KUBECONFIG=$(pwd)/kubeconfig
@@ -86,13 +93,6 @@ jobs:
           ls -l infra
           echo "Listing files in cluster directory:"
           ls -l cluster
-
-      - name: Automate MetalLB Address Pool
-        if: success()
-        run: |
-          echo "Automating MetalLB address pool configuration..."
-          scp -o StrictHostKeyChecking=no -i id_rsa cluster/metallb_pool_automation.sh ec2-user@"$ip":/home/ec2-user/
-          ssh -o StrictHostKeyChecking=no -i id_rsa ec2-user@"$ip" "bash /home/ec2-user/metallb_pool_automation.sh" || echo "Failed to automate MetalLB address pool."
 
       - name: Post-Deployment Validation
         if: success()
