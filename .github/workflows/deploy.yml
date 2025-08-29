@@ -135,3 +135,22 @@ jobs:
           nc -zv $INSTANCE_IP 22 || echo "WARNING: SSH port 22 not reachable."
           nc -zv $INSTANCE_IP 8080 || echo "WARNING: App port 8080 not reachable."
           ping -c 3 $INSTANCE_IP || echo "WARNING: ICMP ping not reachable."
+
+      - name: AWS Automated Security Group and NACL Check
+        run: |
+          INSTANCE_ID=$(terraform output -raw instance_id)
+          SG_ID=$(terraform output -raw security_group_id)
+          SUBNET_ID=$(terraform output -raw subnet_id)
+          ACL_ID=$(terraform output -raw public_acl_id)
+          echo "Checking Security Group rules..."
+          aws ec2 describe-security-groups --group-ids $SG_ID
+          echo "Checking Network ACL rules..."
+          aws ec2 describe-network-acls --network-acl-ids $ACL_ID
+          echo "Checking Subnet association..."
+          aws ec2 describe-subnets --subnet-ids $SUBNET_ID
+          echo "Checking EC2 instance state..."
+          aws ec2 describe-instances --instance-ids $INSTANCE_ID
+
+      - name: Confirm OS Firewall Disabled
+        run: |
+          ssh -o StrictHostKeyChecking=no -i infra/id_rsa ec2-user@$(terraform output -raw instance_public_ip) "sudo systemctl status firewalld || echo 'firewalld not installed'; sudo ufw status || echo 'ufw not installed'; sudo iptables -L"
